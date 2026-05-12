@@ -709,6 +709,8 @@ els.markingList.addEventListener("input", (event) => {
 document.querySelector("#clearSelection").addEventListener("click", () => {
   state.selected = {};
   state.marks = {};
+  els.canvasCsvOutput.value = "";
+  els.canvasExportPanel.hidden = true;
   renderAll();
 });
 
