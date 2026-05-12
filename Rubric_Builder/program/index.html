@@ -3,14 +3,14 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Stage 5 Science Rubric Builder</title>
+    <title>Rubric Builder + Local AI</title>
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <div class="app-shell">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Stage 5 Science</p>
+          <p class="eyebrow" id="activeDatasetLabel">Science – Stage 5</p>
           <h1>Rubric Builder + Local AI</h1>
         </div>
         <div class="top-actions">
@@ -26,6 +26,10 @@
             <h2>Outcomes</h2>
             <span id="dataSummary"></span>
           </div>
+          <label class="dataset-row">
+            <span>Dataset</span>
+            <select id="datasetSelect"></select>
+          </label>
           <label class="search-box">
             <span>Search</span>
             <input id="searchInput" type="search" placeholder="Outcome, topic, skill">
@@ -42,7 +46,7 @@
           <div class="assignment-bar">
             <label>
               <span>Assignment</span>
-              <input id="assignmentTitle" type="text" value="Stage 5 Science Assessment">
+              <input id="assignmentTitle" type="text" value="Science Assessment">
             </label>
             <label>
               <span>Student</span>
@@ -145,7 +149,7 @@
       </main>
     </div>
 
-    <script src="data.js"></script>
+    <script src="datasets/_all.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

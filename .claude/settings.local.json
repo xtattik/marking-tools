@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Nathan\\\\OneDrive\\\\Documents\\\\Code Projects\\\\Marking_Tools\\\\stage5-rubric-app-local-ai\" -Recurse -File)",
+      "Bash(Select-Object FullName)",
+      "Bash(ConvertTo-Json -Depth 10)"
+    ]
+  }
+}

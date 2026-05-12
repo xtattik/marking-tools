@@ -1,4 +1,6 @@
-window.RUBRIC_DATA = {
+window.RUBRIC_DATASETS = window.RUBRIC_DATASETS || {};
+window.RUBRIC_DATASETS["science-s4"] = {
+  "label": "Science – Stage 4",
   "summary": {
     "count": 16,
     "skills": 8,

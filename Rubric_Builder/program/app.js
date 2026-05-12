@@ -1,4 +1,4 @@
-const data = window.RUBRIC_DATA;
+const datasets = window.RUBRIC_DATASETS || {};
 const gradePoints = { E: 2, D: 5, C: 8, B: 11, A: 14, "A++": 16 };
 const pointGrades = ["E", "D", "C", "B", "A", "A++"];
 const levelLabels = {
@@ -29,9 +29,12 @@ const state = {
   search: "",
   selected: {},
   marks: {},
+  activeDataset: Object.keys(datasets).includes("science-s5") ? "science-s5" : Object.keys(datasets)[0] || "",
 };
 
 const els = {
+  activeDatasetLabel: document.querySelector("#activeDatasetLabel"),
+  datasetSelect: document.querySelector("#datasetSelect"),
   dataSummary: document.querySelector("#dataSummary"),
   searchInput: document.querySelector("#searchInput"),
   rubricList: document.querySelector("#rubricList"),
@@ -83,8 +86,12 @@ function nextGrade(grade) {
   return pointGrades[index + 1];
 }
 
+function allRubrics() {
+  return Object.values(datasets).flatMap((ds) => ds.rubrics || []);
+}
+
 function selectedCriteria() {
-  return data.rubrics.flatMap((rubric) => {
+  return allRubrics().flatMap((rubric) => {
     const modes = state.selected[rubric.code] || [];
     return modes.map((mode) => ({
       id: criterionId(rubric.code, mode),
@@ -194,16 +201,16 @@ async function exportCanvasRubricCsv() {
     return;
   }
 
-  const rubricTitle = els.assignmentTitle.value.trim() || "Stage 5 Science Assessment";
+  const rubricTitle = els.assignmentTitle.value.trim() || "Science Assessment";
   const maxRatings = canvasRatings.length;
-  const header = ["Rubric Name", "Criterion Name", "Criterion Description", "Criterion Points"];
-  for (let i = 1; i <= maxRatings; i += 1) {
-    header.push(`Rating ${i} Name`, `Rating ${i} Description`, `Rating ${i} Points`);
+  const header = ["Rubric Name", "Criteria Name", "Criteria Description", "Criteria Enable Range"];
+  for (let i = 0; i < maxRatings; i += 1) {
+    header.push("Rating Name", "Rating Description", "Rating Points");
   }
 
   const rows = criteria.map((item) => {
-    const row = [rubricTitle, criterionCanvasName(item), canvasCriterionDescription(item), 5];
-    [...canvasRatings].reverse().forEach((rating) => {
+    const row = [rubricTitle, criterionCanvasName(item), canvasCriterionDescription(item), false];
+    canvasRatings.forEach((rating) => {
       const description = rating.grade
         ? item.component.descriptors[rating.grade] || rating.name
         : "No evidence has been provided for this criterion, or the relevant section was not submitted.";
@@ -226,14 +233,16 @@ async function exportCanvasRubricCsv() {
 }
 
 function renderLibrary() {
+  const activeData = datasets[state.activeDataset] || { summary: { skills: 0, content: 0 }, rubrics: [] };
   const query = state.search.toLowerCase();
-  const rubrics = data.rubrics.filter((rubric) => {
+  const rubrics = activeData.rubrics.filter((rubric) => {
     const typeMatch = state.filter === "all" || rubric.type === state.filter;
     const text = `${rubric.code} ${rubric.title} ${rubric.description} ${rubric.sheet}`.toLowerCase();
     return typeMatch && text.includes(query);
   });
 
-  els.dataSummary.textContent = `${data.summary.skills} skills, ${data.summary.content} content`;
+  els.dataSummary.textContent = `${activeData.summary.skills} skills, ${activeData.summary.content} content`;
+  if (els.activeDatasetLabel) els.activeDatasetLabel.textContent = activeData.label || state.activeDataset;
   els.rubricList.innerHTML = rubrics
     .map((rubric) => {
       const selectedModes = state.selected[rubric.code] || [];
@@ -593,6 +602,7 @@ function savePlan() {
     aiModel: els.aiModel.value,
     selected: state.selected,
     marks: state.marks,
+    activeDataset: state.activeDataset,
   };
   localStorage.setItem("stage5ScienceRubricPlan", JSON.stringify(payload));
   toast("Saved in this browser");
@@ -614,6 +624,10 @@ function loadPlan() {
   els.aiModel.value = payload.aiModel || "local-model";
   state.selected = payload.selected || {};
   state.marks = payload.marks || {};
+  if (payload.activeDataset && datasets[payload.activeDataset]) {
+    state.activeDataset = payload.activeDataset;
+    els.datasetSelect.value = state.activeDataset;
+  }
   renderAll();
   toast("Loaded");
 }
@@ -733,6 +747,18 @@ document.querySelector("#copyAiPrompt").addEventListener("click", async () => {
   await navigator.clipboard.writeText(prompt);
   setAiStatus("AI prompt copied. You can paste it into any local or online AI tool.");
 });
+Object.entries(datasets).forEach(([key, ds]) => {
+  const opt = document.createElement("option");
+  opt.value = key;
+  opt.textContent = ds.label || key;
+  els.datasetSelect.append(opt);
+});
+els.datasetSelect.value = state.activeDataset;
+els.datasetSelect.addEventListener("change", () => {
+  state.activeDataset = els.datasetSelect.value;
+  renderLibrary();
+});
+
 document.querySelector("#savePlan").addEventListener("click", savePlan);
 document.querySelector("#loadPlan").addEventListener("click", loadPlan);
 document.querySelector("#printView").addEventListener("click", () => window.print());

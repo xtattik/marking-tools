@@ -171,6 +171,10 @@ textarea {
   resize: vertical;
 }
 
+.dataset-row {
+  margin: 10px 0 6px;
+}
+
 .search-box {
   margin: 10px 0;
 }
