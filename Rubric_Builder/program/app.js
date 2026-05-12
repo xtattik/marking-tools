@@ -194,7 +194,7 @@ function canvasCriterionDescription(item) {
   return item.rubric.description || `${item.rubric.code} ${item.rubric.title}`;
 }
 
-async function exportCanvasRubricCsv() {
+async function exportCanvasRubricCsv(useRange = false) {
   const criteria = selectedCriteria();
   if (!criteria.length) {
     toast("Select at least one outcome before exporting");
@@ -209,12 +209,15 @@ async function exportCanvasRubricCsv() {
   }
 
   const rows = criteria.map((item) => {
-    const row = [rubricTitle, criterionCanvasName(item), canvasCriterionDescription(item), false];
+    const row = [rubricTitle, criterionCanvasName(item), canvasCriterionDescription(item), useRange];
     canvasRatings.forEach((rating) => {
       const description = rating.grade
         ? item.component.descriptors[rating.grade] || rating.name
         : "No evidence has been provided for this criterion, or the relevant section was not submitted.";
-      row.push(rating.name, description, rating.points);
+      const points = useRange
+        ? (rating.grade ? levelValue(rating.grade, "plus") : 0).toFixed(1)
+        : rating.points;
+      row.push(rating.name, description, points);
     });
     return row;
   });
@@ -224,7 +227,8 @@ async function exportCanvasRubricCsv() {
     toast("Export stopped: CSV content was unexpectedly empty");
     return;
   }
-  const filename = `${safeFilename(rubricTitle)}-canvas-rubric.csv`;
+  const suffix = useRange ? "-ranged" : "-simple";
+  const filename = `${safeFilename(rubricTitle)}${suffix}-canvas-rubric.csv`;
   showCanvasExport(filename, csv);
   const saved = await saveTextFile(filename, csv);
   if (!saved) {
@@ -709,7 +713,8 @@ document.querySelector("#clearSelection").addEventListener("click", () => {
 });
 
 document.querySelector("#regenerateComment").addEventListener("click", generateComment);
-document.querySelector("#exportCanvasRubric").addEventListener("click", exportCanvasRubricCsv);
+document.querySelector("#exportCanvasSimple").addEventListener("click", () => exportCanvasRubricCsv(false));
+document.querySelector("#exportCanvasRanged").addEventListener("click", () => exportCanvasRubricCsv(true));
 document.querySelector("#saveCanvasCsv").addEventListener("click", async () => {
   const csv = els.canvasCsvOutput.value;
   const filename = els.canvasCsvOutput.dataset.filename || "canvas-rubric.csv";
