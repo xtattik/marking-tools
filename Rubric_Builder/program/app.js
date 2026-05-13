@@ -34,7 +34,8 @@ const state = {
 
 const els = {
   activeDatasetLabel: document.querySelector("#activeDatasetLabel"),
-  datasetSelect: document.querySelector("#datasetSelect"),
+  subjectSelect: document.querySelector("#subjectSelect"),
+  stageSelect: document.querySelector("#stageSelect"),
   dataSummary: document.querySelector("#dataSummary"),
   searchInput: document.querySelector("#searchInput"),
   rubricList: document.querySelector("#rubricList"),
@@ -55,6 +56,37 @@ const els = {
   canvasExportMeta: document.querySelector("#canvasExportMeta"),
   canvasCsvOutput: document.querySelector("#canvasCsvOutput"),
 };
+
+const subjectGroups = {};
+Object.entries(datasets).forEach(([key, ds]) => {
+  const label = ds.label || key;
+  const parts = label.split(" – ");
+  const subject = parts[0].trim();
+  const stage = parts[1]?.trim() || label;
+  if (!subjectGroups[subject]) subjectGroups[subject] = [];
+  subjectGroups[subject].push({ key, stage });
+});
+
+function populateStageSelect(subject) {
+  els.stageSelect.innerHTML = "";
+  (subjectGroups[subject] || []).forEach(({ key, stage }) => {
+    const opt = document.createElement("option");
+    opt.value = key;
+    opt.textContent = stage;
+    els.stageSelect.append(opt);
+  });
+}
+
+function syncDatasetSelects() {
+  for (const [subject, items] of Object.entries(subjectGroups)) {
+    if (items.some((item) => item.key === state.activeDataset)) {
+      els.subjectSelect.value = subject;
+      populateStageSelect(subject);
+      els.stageSelect.value = state.activeDataset;
+      return;
+    }
+  }
+}
 
 function criterionId(code, mode) {
   return `${code}:${mode}`;
@@ -192,6 +224,33 @@ function criterionCanvasName(item) {
 
 function canvasCriterionDescription(item) {
   return item.rubric.description || `${item.rubric.code} ${item.rubric.title}`;
+}
+
+function exportMarks() {
+  const criteria = selectedCriteria();
+  if (!criteria.length) {
+    toast("Select rubric criteria before exporting marks");
+    return;
+  }
+
+  const student = els.studentName.value.trim() || "Student";
+  const comment = els.commentOutput.value.trim();
+  const headers = ["Name", ...criteria.map((item) => criterionCanvasName(item)), "Comment"];
+  const values = [
+    student,
+    ...criteria.map((item) => {
+      const mark = state.marks[item.id];
+      if (!mark?.grade) return "";
+      return levelValue(mark.grade, mark.modifier);
+    }),
+    comment,
+  ];
+
+  const csv = [headers, values].map((row) => row.map(csvEscape).join(",")).join("\r\n");
+  const assignmentTitle = els.assignmentTitle.value.trim() || "assessment";
+  const filename = `${safeFilename(assignmentTitle)}-marks.csv`;
+  downloadTextFile(filename, csv);
+  toast(`Marks exported for ${student}`);
 }
 
 async function exportCanvasRubricCsv(useRange = false) {
@@ -630,7 +689,7 @@ function loadPlan() {
   state.marks = payload.marks || {};
   if (payload.activeDataset && datasets[payload.activeDataset]) {
     state.activeDataset = payload.activeDataset;
-    els.datasetSelect.value = state.activeDataset;
+    syncDatasetSelects();
   }
   renderAll();
   toast("Loaded");
@@ -754,18 +813,24 @@ document.querySelector("#copyAiPrompt").addEventListener("click", async () => {
   await navigator.clipboard.writeText(prompt);
   setAiStatus("AI prompt copied. You can paste it into any local or online AI tool.");
 });
-Object.entries(datasets).forEach(([key, ds]) => {
+Object.keys(subjectGroups).forEach((subject) => {
   const opt = document.createElement("option");
-  opt.value = key;
-  opt.textContent = ds.label || key;
-  els.datasetSelect.append(opt);
+  opt.value = subject;
+  opt.textContent = subject;
+  els.subjectSelect.append(opt);
 });
-els.datasetSelect.value = state.activeDataset;
-els.datasetSelect.addEventListener("change", () => {
-  state.activeDataset = els.datasetSelect.value;
+syncDatasetSelects();
+els.subjectSelect.addEventListener("change", () => {
+  populateStageSelect(els.subjectSelect.value);
+  state.activeDataset = els.stageSelect.value;
+  renderLibrary();
+});
+els.stageSelect.addEventListener("change", () => {
+  state.activeDataset = els.stageSelect.value;
   renderLibrary();
 });
 
+document.querySelector("#exportMarks").addEventListener("click", exportMarks);
 document.querySelector("#savePlan").addEventListener("click", savePlan);
 document.querySelector("#loadPlan").addEventListener("click", loadPlan);
 document.querySelector("#printView").addEventListener("click", () => window.print());

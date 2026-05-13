@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Rubric Builder + Local AI</title>
+    <title>Rubric Builder</title>
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
@@ -11,7 +11,7 @@
       <header class="topbar">
         <div>
           <p class="eyebrow" id="activeDatasetLabel">Science – Stage 5</p>
-          <h1>Rubric Builder + Local AI</h1>
+          <h1>Rubric Builder</h1>
         </div>
         <div class="top-actions">
           <button id="savePlan" type="button">Save Plan</button>
@@ -27,8 +27,12 @@
             <span id="dataSummary"></span>
           </div>
           <label class="dataset-row">
-            <span>Dataset</span>
-            <select id="datasetSelect"></select>
+            <span>Subject</span>
+            <select id="subjectSelect"></select>
+          </label>
+          <label class="dataset-row">
+            <span>Stage</span>
+            <select id="stageSelect"></select>
           </label>
           <label class="search-box">
             <span>Search</span>
@@ -103,7 +107,10 @@
                 <h2>Marking Sheet</h2>
                 <p>Select one grade per criterion and add evidence notes where useful.</p>
               </div>
-              <div class="grade-chip" id="overallGrade">No grade yet</div>
+              <div class="card-actions">
+                <button id="exportMarks" type="button">Export Marks</button>
+                <div class="grade-chip" id="overallGrade">No grade yet</div>
+              </div>
             </div>
             <div id="markingList" class="marking-list empty-state"></div>
           </section>
