@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rubric Builder</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow" id="activeDatasetLabel">Science – Stage 5</p>
+          <h1>Rubric Builder</h1>
+        </div>
+        <div class="top-actions">
+          <button id="savePlan" type="button">Save Plan</button>
+          <button id="loadPlan" type="button">Load Plan</button>
+          <button id="printView" type="button">Print</button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="library" aria-label="Rubric library">
+          <div class="panel-heading">
+            <h2>Outcomes</h2>
+            <span id="dataSummary"></span>
+          </div>
+          <label class="dataset-row">
+            <span>Subject</span>
+            <select id="subjectSelect"></select>
+          </label>
+          <label class="dataset-row">
+            <span>Stage</span>
+            <select id="stageSelect"></select>
+          </label>
+          <label class="search-box">
+            <span>Search</span>
+            <input id="searchInput" type="search" placeholder="Outcome, topic, skill">
+          </label>
+          <div class="filter-row" role="group" aria-label="Outcome type">
+            <button class="filter active" type="button" data-filter="all">All</button>
+            <button class="filter" type="button" data-filter="skills">Skills</button>
+            <button class="filter" type="button" data-filter="content">Content</button>
+          </div>
+          <div id="rubricList" class="rubric-list"></div>
+        </aside>
+
+        <section class="builder" aria-label="Assignment rubric builder">
+          <div class="assignment-bar">
+            <label>
+              <span>Assignment</span>
+              <input id="assignmentTitle" type="text" value="Science Assessment">
+            </label>
+            <label>
+              <span>Student</span>
+              <input id="studentName" type="text" placeholder="Student name">
+            </label>
+            <label>
+              <span>Tone</span>
+              <select id="commentTone">
+                <option value="balanced">Balanced</option>
+                <option value="encouraging">Encouraging</option>
+                <option value="direct">Direct</option>
+              </select>
+            </label>
+          </div>
+
+          <nav class="tabs" aria-label="Views">
+            <button class="tab active" type="button" data-view="design">Design Rubric</button>
+            <button class="tab" type="button" data-view="mark">Mark Student</button>
+            <button class="tab" type="button" data-view="comment">Generate Comment</button>
+          </nav>
+
+          <section id="designView" class="view active">
+            <div class="view-heading">
+              <div>
+                <h2>Selected Rubric</h2>
+                <p id="selectedSummary">Choose outcomes on the left.</p>
+              </div>
+              <div class="card-actions">
+                <button id="exportCanvasSimple" type="button">Export Simple Rubric</button>
+                <button id="exportCanvasRanged" type="button">Export Ranged Rubric</button>
+                <button id="clearSelection" type="button">Clear</button>
+              </div>
+            </div>
+            <div id="rubricTable" class="rubric-table-wrap empty-state"></div>
+            <div id="canvasExportPanel" class="export-panel" hidden>
+              <div class="view-heading">
+                <div>
+                  <h2>Canvas CSV Export</h2>
+                  <p id="canvasExportMeta"></p>
+                </div>
+                <div class="card-actions">
+                  <button id="saveCanvasCsv" type="button">Save As</button>
+                  <button id="downloadCanvasCsv" type="button">Download</button>
+                  <button id="copyCanvasCsv" type="button">Copy CSV</button>
+                </div>
+              </div>
+              <textarea id="canvasCsvOutput" spellcheck="false"></textarea>
+            </div>
+          </section>
+
+          <section id="markView" class="view">
+            <div class="view-heading">
+              <div>
+                <h2>Marking Sheet</h2>
+                <p>Select one grade per criterion and add evidence notes where useful.</p>
+              </div>
+              <div class="card-actions">
+                <button id="exportMarks" type="button">Export Marks</button>
+                <div class="grade-chip" id="overallGrade">No grade yet</div>
+              </div>
+            </div>
+            <div id="markingList" class="marking-list empty-state"></div>
+          </section>
+
+          <section id="commentView" class="view">
+            <div class="comment-layout">
+              <div>
+                <div class="view-heading">
+                  <div>
+                    <h2>Feedback Comment</h2>
+                    <p>Built from the selected rubric levels and your evidence notes.</p>
+                  </div>
+                  <button id="copyComment" type="button">Copy</button>
+                </div>
+                <textarea id="commentOutput" spellcheck="true"></textarea>
+              </div>
+              <aside class="comment-tools">
+                <label>
+                  <span>Optional task context</span>
+                  <textarea id="taskContext" placeholder="e.g. student investigation report on reaction rates"></textarea>
+                </label>
+                <label>
+                  <span>Teacher note to include</span>
+                  <textarea id="teacherNote" placeholder="e.g. mention graphing accuracy or practical safety"></textarea>
+                </label>
+                <div class="ai-box">
+                  <label>
+                    <span>Local AI endpoint</span>
+                    <input id="aiEndpoint" type="url" value="http://127.0.0.1:8080/v1/chat/completions">
+                  </label>
+                  <label>
+                    <span>Model name</span>
+                    <input id="aiModel" type="text" value="local-model">
+                  </label>
+                  <button id="generateAiComment" type="button">Generate with Local AI</button>
+                  <button id="copyAiPrompt" type="button">Copy AI Prompt</button>
+                  <p id="aiStatus" class="ai-status">Uses your local llama.cpp server. Student details stay on this machine.</p>
+                </div>
+                <button id="regenerateComment" type="button">Regenerate</button>
+              </aside>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script src="datasets/_all.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
