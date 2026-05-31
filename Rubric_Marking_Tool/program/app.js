@@ -823,7 +823,7 @@ Rules:
 - Include clear next steps using the next-step directions.
 - Use Australian English spelling.
 - Keep it professional, warm, and suitable for a Year 9 or Year 10 science student.
-- Aim for 120 to 180 words.`;
+- Aim for 30 - 50 words per outcome assessed.`;
 }
 
 function setAiStatus(message, kind = "") {
