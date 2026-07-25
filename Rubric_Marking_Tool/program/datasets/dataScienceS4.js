@@ -600,9 +600,9 @@ window.RUBRIC_DATASETS["science-s4"] = {
     {
       "id": "SC4-WS-06",
       "code": "SC4-WS-06",
-      "title": "Analaysing Data",
+      "title": "Analysing Data",
       "description": "uses data to identify trends, patterns and relationships, and draw conclusions",
-      "sheet": "Analaysing Data",
+      "sheet": "Analysing Data",
       "type": "skills",
       "components": {
         "theory": {
