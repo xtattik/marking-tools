@@ -138,6 +138,7 @@ def assign_kill_on_close_job(proc):
     ):
         close_job(job)
         return None
+    # Popen._handle is CPython's private process handle on Windows; if it ever changes, this fails safe (no job, returns None).
     if not kernel32.AssignProcessToJobObject(job, int(proc._handle)):
         close_job(job)
         return None
@@ -225,8 +226,10 @@ class ModelManager:
                             if self._proc is proc:
                                 self._state = "ready"
                         return
+            except urllib.error.HTTPError as exc:
+                exc.close()  # 503 while the model loads; close it so the socket isn't leaked
             except (urllib.error.URLError, OSError):
-                pass  # not listening yet, or 503 while the model loads
+                pass  # not listening yet
             time.sleep(0.3)
         self._fail(proc, f"The model did not become ready within {int(self.health_timeout)} seconds.")
 
@@ -236,11 +239,13 @@ class ModelManager:
                 return  # stopped or restarted meanwhile
             self._proc = None
             job, self._job = self._job, None
-            self._state = "error"
         _terminate(proc)
-        log = tail_file(self.log_path)
+        error = f"{message}\n{tail_file(self.log_path)}".strip()
         with self._lock:
-            self._error = f"{message}\n{log}".strip()
+            # Still "starting" unless stop() or start() ran while we were terminating.
+            if self._proc is None and self._state == "starting":
+                self._state = "error"
+                self._error = error
         self._close_log()
         close_job(job)
 

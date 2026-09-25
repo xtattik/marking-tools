@@ -62,6 +62,13 @@ class ModelManagerTests(unittest.TestCase):
         self.assertEqual(manager.status(), {"state": "stopped", "error": None})
         self.assertIsNone(manager.pid())
 
+    def test_stop_during_loading_stays_stopped(self):
+        manager = self.make("--delay", "30")
+        manager.start()
+        manager.stop()
+        time.sleep(0.5)
+        self.assertEqual(manager.status(), {"state": "stopped", "error": None})
+
     def test_crash_while_loading_reports_exit_code_and_log(self):
         manager = self.make("--fail")
         manager.start()
