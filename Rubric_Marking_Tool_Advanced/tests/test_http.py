@@ -156,6 +156,19 @@ class HttpTests(unittest.TestCase):
         status, _, _ = self.request("POST", "/api/model/stop", headers={"Content-Type": "text/plain"})
         self.assertEqual(status, 415)
 
+    def test_invalid_content_length_is_handled(self):
+        for bogus in ("-5", "abc"):
+            conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=20)
+            conn.putrequest("POST", "/api/model/stop")
+            conn.putheader("Content-Type", "application/json")
+            conn.putheader("Content-Length", bogus)
+            conn.endheaders()
+            response = conn.getresponse()
+            status = response.status
+            response.read()
+            conn.close()
+            self.assertEqual(status, 200, bogus)
+
     # --- chat proxy ---
 
     def test_chat_requires_payload(self):

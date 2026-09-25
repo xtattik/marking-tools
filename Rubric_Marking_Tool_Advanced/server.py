@@ -419,7 +419,11 @@ class Handler(BaseHTTPRequestHandler):
             return self._send_json(403, {"error": "Requests from other websites are not allowed."})
         if not (self.headers.get("Content-Type") or "").startswith("application/json"):
             return self._send_json(415, {"error": "Expected a JSON request."})
-        length = min(int(self.headers.get("Content-Length") or 0), MAX_BODY)
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            length = 0
+        length = max(0, min(length, MAX_BODY))
         raw = self.rfile.read(length) if length else b""
 
         if path == "/api/model/start":
