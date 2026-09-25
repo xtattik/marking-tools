@@ -121,7 +121,7 @@ Styling in `advanced-ai.css`, reusing the standard tool's CSS variables/classes 
 
 ### `setup.bat`
 
-Uses only Windows 10/11 built-ins: `curl.exe`, `tar.exe`, PowerShell (for JSON parsing of GitHub/Hugging Face API responses).
+Uses only Windows 10/11 built-ins (`curl.exe`, `tar.exe`) to fetch the portable Python, then runs `setup_helper.py` with it for the llama.cpp and model checks.
 
 | Component | Up-to-date check | Downloads when |
 |---|---|---|
