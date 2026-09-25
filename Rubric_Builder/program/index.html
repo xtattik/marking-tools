@@ -52,27 +52,9 @@
               <span>Assignment</span>
               <input id="assignmentTitle" type="text" value="Science Assessment">
             </label>
-            <label>
-              <span>Student</span>
-              <input id="studentName" type="text" placeholder="Student name">
-            </label>
-            <label>
-              <span>Tone</span>
-              <select id="commentTone">
-                <option value="balanced">Balanced</option>
-                <option value="encouraging">Encouraging</option>
-                <option value="direct">Direct</option>
-              </select>
-            </label>
           </div>
 
-          <nav class="tabs" aria-label="Views">
-            <button class="tab active" type="button" data-view="design">Design Rubric</button>
-            <button class="tab" type="button" data-view="mark">Mark Student</button>
-            <button class="tab" type="button" data-view="comment">Generate Comment</button>
-          </nav>
-
-          <section id="designView" class="view active">
+          <section id="designView" class="view">
             <div class="view-heading">
               <div>
                 <h2>Selected Rubric</h2>
@@ -98,59 +80,6 @@
                 </div>
               </div>
               <textarea id="canvasCsvOutput" spellcheck="false"></textarea>
-            </div>
-          </section>
-
-          <section id="markView" class="view">
-            <div class="view-heading">
-              <div>
-                <h2>Marking Sheet</h2>
-                <p>Select one grade per criterion and add evidence notes where useful.</p>
-              </div>
-              <div class="card-actions">
-                <button id="exportMarks" type="button">Export Marks</button>
-                <div class="grade-chip" id="overallGrade">No grade yet</div>
-              </div>
-            </div>
-            <div id="markingList" class="marking-list empty-state"></div>
-          </section>
-
-          <section id="commentView" class="view">
-            <div class="comment-layout">
-              <div>
-                <div class="view-heading">
-                  <div>
-                    <h2>Feedback Comment</h2>
-                    <p>Built from the selected rubric levels and your evidence notes.</p>
-                  </div>
-                  <button id="copyComment" type="button">Copy</button>
-                </div>
-                <textarea id="commentOutput" spellcheck="true"></textarea>
-              </div>
-              <aside class="comment-tools">
-                <label>
-                  <span>Optional task context</span>
-                  <textarea id="taskContext" placeholder="e.g. student investigation report on reaction rates"></textarea>
-                </label>
-                <label>
-                  <span>Teacher note to include</span>
-                  <textarea id="teacherNote" placeholder="e.g. mention graphing accuracy or practical safety"></textarea>
-                </label>
-                <div class="ai-box">
-                  <label>
-                    <span>Local AI endpoint</span>
-                    <input id="aiEndpoint" type="url" value="http://127.0.0.1:8080/v1/chat/completions">
-                  </label>
-                  <label>
-                    <span>Model name</span>
-                    <input id="aiModel" type="text" value="local-model">
-                  </label>
-                  <button id="generateAiComment" type="button">Generate with Local AI</button>
-                  <button id="copyAiPrompt" type="button">Copy AI Prompt</button>
-                  <p id="aiStatus" class="ai-status">Uses your local llama.cpp server. Student details stay on this machine.</p>
-                </div>
-                <button id="regenerateComment" type="button">Regenerate</button>
-              </aside>
             </div>
           </section>
         </section>

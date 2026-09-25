@@ -1,43 +1,23 @@
-# Stage 5 Science Rubric Builder
+# Rubric Builder
 
-Open `index.html` to use the app.
+Double-click `Open Rubric Builder.bat` (it refreshes the rubric datasets, then opens `program/index.html`).
 
-The app lets you:
+The Builder is for creating and exporting rubrics:
 
-- choose Stage 5 Science outcomes
-- include theory, applied, or both criteria
-- build an assignment-specific rubric
-- mark a student against each selected criterion
-- generate an editable feedback comment
-- save and reload the current plan in the browser
-- print the rubric, marking sheet, and comment
+- choose a subject and stage, then search or filter outcomes
+- tick Theory, Applied, or both for each outcome
+- name the assignment and review the combined rubric table
+- export the rubric to Canvas (simple or ranged points)
+- save and reload the current plan in this browser
+- print the rubric
 
-The original spreadsheet is not changed.
-
-## Local AI version
-
-This copy includes a local `llama.cpp` option for richer feedback comments.
-
-1. Start your `llama-server` batch file.
-2. Open `index.html`.
-3. Select outcomes and mark at least one descriptor.
-4. Use `Generate with Local AI`.
-
-Default endpoint:
-
-`http://127.0.0.1:8080/v1/chat/completions`
-
-If the button cannot connect, check that the local server is running and that the browser allows requests from this local HTML file to `127.0.0.1:8080`.
-
-The original non-AI app remains in the `stage5-rubric-app` folder.
+To mark students and write feedback comments, use the Rubric Marking Tool.
 
 ## Canvas rubric export
 
-The design page includes `Export Canvas CSV`.
+`Export Simple Rubric` and `Export Ranged Rubric` show the CSV in the app, then try to save it with a Save As picker. If saving is blocked, use `Download` or `Copy CSV` from the export panel.
 
-The export displays the CSV in the app, then tries to save it with a Save As picker. If saving is blocked, use `Download` or `Copy CSV` from the export panel.
-
-The export uses this point mapping:
+Simple rubric points:
 
 - No Evidence / Not Submitted: 0
 - Limited: 1
@@ -47,4 +27,6 @@ The export uses this point mapping:
 - Well Above Standard: 5
 - Beyond Stage: 5
 
-Canvas publishes a rubric CSV upload endpoint and a template endpoint, but individual Canvas instances can be picky about their import template. If your Canvas rejects the file, download the official rubric upload template from your Canvas instance and the exporter can be adjusted to match it exactly.
+The ranged rubric enables Canvas point ranges and uses the top of each level's teacher-scale band as the rating's points.
+
+Canvas instances can be picky about their import template. If yours rejects the file, download the official rubric upload template from your Canvas instance so the exporter can be adjusted to match it.
