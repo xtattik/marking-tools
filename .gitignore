@@ -1,2 +1,6 @@
 node_modules/
-Rubric_Marking_Tool/models/
+release/
+Rubric_Marking_Tool_Advanced/bin/
+Rubric_Marking_Tool_Advanced/models/
+Rubric_Marking_Tool_Advanced/logs/
+__pycache__/
