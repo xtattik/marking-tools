@@ -5,6 +5,7 @@ starts/stops a built-in llama-server, and proxies chat requests to it or to a
 custom endpoint. Standard library only, so it runs on the embeddable Python
 that setup.bat downloads.
 """
+import argparse
 import json
 import subprocess
 import sys
@@ -12,6 +13,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
@@ -448,3 +450,46 @@ def make_server(app, port):
     httpd = AdvancedServer(("127.0.0.1", port), Handler)
     httpd.app = app
     return httpd
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Advanced Rubric Marking Tool")
+    parser.add_argument("--no-browser", action="store_true", help="don't open the browser")
+    args = parser.parse_args(argv)
+
+    config = load_config(ROOT / "config.json")
+    app = App(config, ROOT, ROOT.parent / "Rubric_Marking_Tool" / "program", ROOT / "web")
+    url = f"http://127.0.0.1:{config['ui_port']}/"
+
+    if not (app.standard_dir / "index.html").is_file():
+        print(f"Could not find the standard marking tool at {app.standard_dir}")
+        print("Keep this folder next to the Rubric_Marking_Tool folder.")
+        return 1
+
+    try:
+        httpd = make_server(app, config["ui_port"])
+    except OSError:
+        print(f"Port {config['ui_port']} is already in use - the Advanced Marking Tool is probably already open.")
+        print(f"Opening {url}")
+        if not args.no_browser:
+            webbrowser.open(url)
+        return 2
+
+    print("Advanced Rubric Marking Tool")
+    print(f"  Open in your browser: {url}")
+    print(f"  Built-in model: {app.model_path}")
+    print("  Close this window (or press Ctrl+C) to stop the tool and the model.")
+    if not args.no_browser:
+        webbrowser.open(url)
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        app.manager.stop()
+        httpd.server_close()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
