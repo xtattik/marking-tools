@@ -146,22 +146,9 @@
                   <textarea id="teacherNote" placeholder="e.g. mention graphing accuracy or practical safety"></textarea>
                 </label>
                 <div class="ai-box">
-                  <button id="generateAiComment" type="button">Generate with Local AI</button>
+                  <div id="aiSlot"></div>
                   <button id="copyAiPrompt" type="button">Copy AI Prompt</button>
-                  <details class="ai-advanced">
-                    <summary>Server settings</summary>
-                    <div class="ai-fields">
-                      <label>
-                        <span>Local AI endpoint</span>
-                        <input id="aiEndpoint" type="url" value="http://127.0.0.1:8080/v1/chat/completions">
-                      </label>
-                      <label>
-                        <span>Model name</span>
-                        <input id="aiModel" type="text" value="local-model">
-                      </label>
-                    </div>
-                  </details>
-                  <p id="aiStatus" class="ai-status">Uses your local llama.cpp server. Student details stay on this machine.</p>
+                  <p id="aiStatus" class="ai-status">Copy the prompt, paste it into Copilot or any AI tool, then paste the result into the comment box.</p>
                 </div>
                 <button id="regenerateComment" type="button">Regenerate</button>
               </aside>

@@ -51,8 +51,6 @@ const els = {
   commentOutput: document.querySelector("#commentOutput"),
   taskContext: document.querySelector("#taskContext"),
   teacherNote: document.querySelector("#teacherNote"),
-  aiEndpoint: document.querySelector("#aiEndpoint"),
-  aiModel: document.querySelector("#aiModel"),
   aiStatus: document.querySelector("#aiStatus"),
   canvasExportPanel: document.querySelector("#canvasExportPanel"),
   canvasExportMeta: document.querySelector("#canvasExportMeta"),
@@ -512,8 +510,6 @@ function buildSessionPayload() {
     commentTone: els.commentTone.value,
     taskContext: els.taskContext.value,
     teacherNote: els.teacherNote.value,
-    aiEndpoint: els.aiEndpoint.value,
-    aiModel: els.aiModel.value,
     comment: els.commentOutput.value,
     selected: state.selected,
     marks: state.marks,
@@ -529,8 +525,6 @@ function restoreSession(payload) {
   els.commentTone.value = payload.commentTone || "balanced";
   els.taskContext.value = payload.taskContext || "";
   els.teacherNote.value = payload.teacherNote || "";
-  els.aiEndpoint.value = payload.aiEndpoint || "http://127.0.0.1:8080/v1/chat/completions";
-  els.aiModel.value = payload.aiModel || "local-model";
   if (payload.comment) els.commentOutput.value = payload.comment;
   state.selected = payload.selected || {};
   state.marks = payload.marks || {};
@@ -780,6 +774,9 @@ function markedCriteria() {
     .filter((item) => item.mark.grade);
 }
 
+// Add-on contract: Rubric_Marking_Tool_Advanced/web/advanced-ai.js (loaded after this file)
+// calls buildAiPrompt(), setAiStatus() and writes els.commentOutput. Keep these as top-level
+// declarations so they stay reachable from other classic scripts.
 function buildAiPrompt() {
   const marked = markedCriteria();
   const student = els.studentName.value.trim() || "the student";
@@ -829,60 +826,6 @@ Rules:
 function setAiStatus(message, kind = "") {
   els.aiStatus.textContent = message;
   els.aiStatus.className = `ai-status ${kind}`.trim();
-}
-
-function cleanAiComment(text) {
-  return String(text || "")
-    .replace(/<think>[\s\S]*?<\/think>/gi, "")
-    .replace(/^\s*(feedback comment:|comment:)\s*/i, "")
-    .trim();
-}
-
-async function generateWithLocalAi() {
-  const prompt = buildAiPrompt();
-  if (!prompt) {
-    setAiStatus("Select rubric criteria and choose at least one matching descriptor first.", "error");
-    return;
-  }
-
-  const endpoint = els.aiEndpoint.value.trim() || "http://127.0.0.1:8080/v1/chat/completions";
-  const model = els.aiModel.value.trim() || "local-model";
-  setAiStatus("Asking your local AI server...", "working");
-
-  try {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model,
-        messages: [
-          {
-            role: "system",
-            content: "You write clear, specific Australian high school science feedback. Follow the user's constraints exactly.",
-          },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.55,
-        top_p: 0.9,
-        max_tokens: 450,
-        stream: false,
-      }),
-    });
-
-    if (!response.ok) throw new Error(`Local AI server returned ${response.status}`);
-
-    const result = await response.json();
-    const content = cleanAiComment(result?.choices?.[0]?.message?.content || result?.choices?.[0]?.text || "");
-    if (!content) throw new Error("Local AI returned an empty response");
-
-    els.commentOutput.value = content;
-    setAiStatus("Local AI comment generated. Edit it freely before using it.");
-  } catch (error) {
-    setAiStatus(
-      `Could not reach the local AI server. Check that llama-server is running on port 8080. ${error.message}`,
-      "error"
-    );
-  }
 }
 
 function generateComment() {
@@ -1055,7 +998,6 @@ document.querySelector("#copyCanvasCsv").addEventListener("click", async () => {
   toast("Canvas CSV copied");
 });
 
-document.querySelector("#generateAiComment").addEventListener("click", generateWithLocalAi);
 document.querySelector("#copyAiPrompt").addEventListener("click", async () => {
   const prompt = buildAiPrompt();
   if (!prompt) {
@@ -1063,7 +1005,7 @@ document.querySelector("#copyAiPrompt").addEventListener("click", async () => {
     return;
   }
   await navigator.clipboard.writeText(prompt);
-  setAiStatus("AI prompt copied. You can paste it into any local or online AI tool.");
+  setAiStatus("AI prompt copied. Paste it into Copilot or any AI tool.");
 });
 
 

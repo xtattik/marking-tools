@@ -1,50 +1,25 @@
-# Stage 5 Science Rubric Builder
+# Rubric Marking Tool
 
-Open `index.html` to use the app.
+Double-click `Open Rubric Marking Tool.bat` (it refreshes the rubric datasets, then opens `program/index.html`).
 
-The app lets you:
+The Marking Tool lets you:
 
-- choose Stage 5 Science outcomes
-- include theory, applied, or both criteria
-- build an assignment-specific rubric
-- mark a student against each selected criterion
+- choose outcomes and build an assignment rubric (same library as the Rubric Builder)
+- export the rubric to Canvas (simple or ranged points)
+- mark a student against each criterion, with evidence notes
 - generate an editable feedback comment
-- save and reload the current plan in the browser
-- print the rubric, marking sheet, and comment
+- copy an AI prompt to paste into Copilot or another AI tool for a richer comment
+- keep a class roster and export class marks
+- save/load the session in this browser, or export/import it as JSON
+- print the rubric, marking sheet and comment
 
-The original spreadsheet is not changed.
+## Using AI for comments
 
-## Local AI version
-
-This copy includes a local `llama.cpp` option for richer feedback comments.
-
-1. Start your `llama-server` batch file.
-2. Open `index.html`.
-3. Select outcomes and mark at least one descriptor.
-4. Use `Generate with Local AI`.
-
-Default endpoint:
-
-`http://127.0.0.1:8080/v1/chat/completions`
-
-If the button cannot connect, check that the local server is running and that the browser allows requests from this local HTML file to `127.0.0.1:8080`.
-
-The original non-AI app remains in the `stage5-rubric-app` folder.
+1. Mark at least one criterion.
+2. Open the Generate Comment tab, add optional task context and a teacher note.
+3. Click `Copy AI Prompt` and paste it into Copilot (or any AI tool).
+4. Paste the AI's reply into the comment box and edit as needed.
 
 ## Canvas rubric export
 
-The design page includes `Export Canvas CSV`.
-
-The export displays the CSV in the app, then tries to save it with a Save As picker. If saving is blocked, use `Download` or `Copy CSV` from the export panel.
-
-The export uses this point mapping:
-
-- No Evidence / Not Submitted: 0
-- Limited: 1
-- Working Towards Standard: 2
-- At Standard: 3
-- Above Standard: 4
-- Well Above Standard: 5
-- Beyond Stage: 5
-
-Canvas publishes a rubric CSV upload endpoint and a template endpoint, but individual Canvas instances can be picky about their import template. If your Canvas rejects the file, download the official rubric upload template from your Canvas instance and the exporter can be adjusted to match it exactly.
+See the Rubric Builder README for the point mapping. If your Canvas rejects the file, download the official rubric upload template from your Canvas instance so the exporter can be adjusted to match it.
