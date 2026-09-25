@@ -12,7 +12,9 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parent
 
@@ -28,6 +30,18 @@ DEFAULT_CONFIG = {
 
 INJECT_HEAD = '<link rel="stylesheet" href="/advanced/advanced-ai.css">\n'
 INJECT_BODY = '<script src="/advanced/advanced-ai.js"></script>\n'
+
+CONTENT_TYPES = {
+    ".html": "text/html; charset=utf-8",
+    ".js": "text/javascript; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".json": "application/json",
+    ".png": "image/png",
+    ".svg": "image/svg+xml",
+    ".ico": "image/x-icon",
+}
+CHAT_TIMEOUT = 300
+MAX_BODY = 1_000_000
 
 
 def load_config(path):
@@ -265,3 +279,172 @@ class ModelManager:
             log_file, self._log_file = self._log_file, None
         if log_file:
             log_file.close()
+
+
+def _json_bytes(obj):
+    return json.dumps(obj).encode("utf-8")
+
+
+class App:
+    """Everything the HTTP handler needs: paths, config and the model manager."""
+
+    def __init__(self, config, root, standard_dir, web_dir, manager=None):
+        self.config = config
+        self.root = Path(root)
+        self.standard_dir = Path(standard_dir)
+        self.web_dir = Path(web_dir)
+        self.llama_exe = self.root / "bin" / "llama.cpp" / "llama-server.exe"
+        self.model_path = resolve_model_path(config, self.root)
+        self.manager = manager or ModelManager(
+            self.build_llama_command, config["model_port"], self.root / "logs" / "llama-server.log"
+        )
+
+    def build_llama_command(self):
+        cmd = [
+            str(self.llama_exe),
+            "-m", str(self.model_path),
+            "--host", "127.0.0.1",
+            "--port", str(self.config["model_port"]),
+            "-c", str(self.config["context_size"]),
+            "--reasoning", "off",
+            "--no-webui",
+        ]
+        threads = int(self.config.get("threads") or 0)
+        if threads > 0:
+            cmd += ["-t", str(threads)]
+        return cmd
+
+    def model_status(self):
+        return {**self.manager.status(), "model": self.model_path.name}
+
+    def start_model(self):
+        if not self.llama_exe.is_file():
+            return {
+                "state": "error",
+                "model": self.model_path.name,
+                "error": f"llama-server.exe not found at {self.llama_exe}. Run setup.bat first.",
+            }
+        if not self.model_path.is_file():
+            return {
+                "state": "error",
+                "model": self.model_path.name,
+                "error": f"Model file not found at {self.model_path}. Run setup.bat, or fix model_path in config.json.",
+            }
+        self.manager.start()
+        return self.model_status()
+
+    def chat(self, body):
+        """Forward a chat payload. Returns (http_status, response_bytes)."""
+        payload = body.get("payload")
+        if not isinstance(payload, dict):
+            return 400, _json_bytes({"error": "Missing chat payload."})
+        target = body.get("target")
+        if target == "builtin":
+            if self.manager.status()["state"] != "ready":
+                return 409, _json_bytes({"error": "The built-in model is not running. Click Start first."})
+            url = f"http://127.0.0.1:{self.config['model_port']}/v1/chat/completions"
+        elif target == "custom":
+            url = str(body.get("endpoint") or "").strip()
+            if not url.startswith(("http://", "https://")):
+                return 400, _json_bytes({"error": "Enter an endpoint URL starting with http:// or https://."})
+        else:
+            return 400, _json_bytes({"error": "Unknown AI source."})
+
+        request = urllib.request.Request(
+            url, data=_json_bytes(payload), headers={"Content-Type": "application/json"}, method="POST"
+        )
+        try:
+            with _OPENER.open(request, timeout=CHAT_TIMEOUT) as response:
+                return response.status, response.read()
+        except urllib.error.HTTPError as exc:
+            return exc.code, exc.read() or _json_bytes({"error": f"{url} returned {exc.code}."})
+        except (urllib.error.URLError, OSError) as exc:
+            reason = getattr(exc, "reason", exc)
+            return 502, _json_bytes({"error": f"Could not reach {url}: {reason}"})
+
+
+class Handler(BaseHTTPRequestHandler):
+    server_version = "RubricAdvanced/1.0"
+
+    def log_message(self, *_):
+        pass  # keep the console window readable
+
+    @property
+    def app(self):
+        return self.server.app
+
+    def _send(self, status, data, content_type):
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _send_json(self, status, obj):
+        self._send(status, _json_bytes(obj), "application/json")
+
+    def _not_found(self):
+        self._send(404, b"Not found", "text/plain; charset=utf-8")
+
+    def do_GET(self):
+        path = unquote(urlsplit(self.path).path)
+        if path == "/api/model/status":
+            return self._send_json(200, self.app.model_status())
+        if path in ("/", "/index.html"):
+            page = resolve_static(self.app.standard_dir, "index.html")
+            if not page:
+                return self._not_found()
+            html = inject_advanced(page.read_text(encoding="utf-8"))
+            return self._send(200, html.encode("utf-8"), CONTENT_TYPES[".html"])
+        if path.startswith("/advanced/"):
+            file = resolve_static(self.app.web_dir, path[len("/advanced/"):])
+        else:
+            file = resolve_static(self.app.standard_dir, path.lstrip("/"))
+        if not file:
+            return self._not_found()
+        self._send(200, file.read_bytes(), CONTENT_TYPES.get(file.suffix.lower(), "application/octet-stream"))
+
+    def _origin_ok(self):
+        # Browsers always send Origin on cross-site POSTs; refuse anything that isn't this page.
+        origin = self.headers.get("Origin")
+        port = self.server.server_address[1]
+        return origin is None or origin in (f"http://127.0.0.1:{port}", f"http://localhost:{port}")
+
+    def do_POST(self):
+        path = urlsplit(self.path).path
+        if not self._origin_ok():
+            return self._send_json(403, {"error": "Requests from other websites are not allowed."})
+        if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+            return self._send_json(415, {"error": "Expected a JSON request."})
+        length = min(int(self.headers.get("Content-Length") or 0), MAX_BODY)
+        raw = self.rfile.read(length) if length else b""
+
+        if path == "/api/model/start":
+            return self._send_json(200, self.app.start_model())
+        if path == "/api/model/stop":
+            self.app.manager.stop()
+            return self._send_json(200, self.app.model_status())
+        if path == "/api/chat":
+            try:
+                body = json.loads(raw or b"{}")
+            except json.JSONDecodeError:
+                return self._send_json(400, {"error": "Request body was not valid JSON."})
+            if not isinstance(body, dict):
+                return self._send_json(400, {"error": "Request body must be a JSON object."})
+            status, data = self.app.chat(body)
+            return self._send(status, data, "application/json")
+        self._not_found()
+
+
+class AdvancedServer(ThreadingHTTPServer):
+    # ThreadingHTTPServer defaults to SO_REUSEADDR, which on Windows lets a second
+    # copy silently share the port. Turn it off so a second launch fails cleanly.
+    allow_reuse_address = False
+    daemon_threads = True
+
+
+def make_server(app, port):
+    httpd = AdvancedServer(("127.0.0.1", port), Handler)
+    httpd.app = app
+    return httpd
