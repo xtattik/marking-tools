@@ -53,13 +53,16 @@ def fetch_json(url):
         return json.load(response)
 
 
-def download(url, dest):
+def download(url, dest, expected_size=None):
     """Stream url to dest via a .part file so an interrupted download never looks complete."""
     dest.parent.mkdir(parents=True, exist_ok=True)
     part = dest.with_name(dest.name + ".part")
     request = urllib.request.Request(url, headers=HEADERS)
     with urllib.request.urlopen(request, timeout=60) as response, open(part, "wb") as out:
-        total = int(response.headers.get("Content-Length") or 0)
+        try:
+            total = int(response.headers.get("Content-Length") or 0)
+        except (TypeError, ValueError):
+            total = 0
         done = 0
         while chunk := response.read(1024 * 1024):
             out.write(chunk)
@@ -67,7 +70,24 @@ def download(url, dest):
             if total:
                 print(f"\r  {done // 2**20} / {total // 2**20} MB", end="", flush=True)
     print()
+    if (expected_size is not None and done != expected_size) or (total and done != total):
+        raise OSError(f"download incomplete ({done} of {expected_size or total} bytes)")
     part.replace(dest)
+
+
+def swap_in(staging, final):
+    """Replace `final` with `staging`, restoring the old copy if the swap fails."""
+    backup = final.with_name(final.name + ".old")
+    shutil.rmtree(backup, ignore_errors=True)
+    if final.exists():
+        final.rename(backup)
+    try:
+        staging.rename(final)
+    except OSError:
+        if backup.exists() and not final.exists():
+            backup.rename(final)
+        raise
+    shutil.rmtree(backup, ignore_errors=True)
 
 
 def update_llama():
@@ -102,9 +122,7 @@ def update_llama():
         if not (staging / "llama-server.exe").is_file():
             raise RuntimeError("llama-server.exe was not in the download")
         (staging / "VERSION").write_text(tag)
-        if LLAMA_DIR.exists():
-            shutil.rmtree(LLAMA_DIR)
-        staging.rename(LLAMA_DIR)
+        swap_in(staging, LLAMA_DIR)
     except PermissionError:
         print("[error] llama.cpp: files are in use. Close the Advanced Marking Tool window and run setup again.")
         return "error"
@@ -145,11 +163,12 @@ def update_model(config):
 
     print(f"Downloading {filename} ({expected // 2**20} MB) - this takes a while ...")
     try:
-        download(f"https://huggingface.co/{repo}/resolve/main/{filename}", target)
+        download(f"https://huggingface.co/{repo}/resolve/main/{filename}", target, expected)
     except (urllib.error.URLError, OSError) as exc:
         print(f"[error] Model: download failed ({exc}). Run setup again to retry.")
         return "error"
     if needs_download(target, expected):
+        target.unlink(missing_ok=True)
         print("[error] Model: downloaded file is the wrong size. Run setup again to retry.")
         return "error"
     print(f"[ok] Model {filename} installed.")
